@@ -12,6 +12,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 /**
  * Created by Lucas Chigami on 26/01/2015.
  */
@@ -19,6 +21,7 @@ public class QuizActivity extends Activity {
 
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
+    private static final String CHEAT_LIST = "cheat_list";
 
     private Button mTrueButton;
     private Button mFalseButton;
@@ -37,6 +40,19 @@ public class QuizActivity extends Activity {
 
     private int mCurrentIndex = 0;
 
+    private boolean mIsCheater;
+
+    private ArrayList<Integer> mCheatList;
+
+    //Function that verifies is the user is a cheater in that question
+    private void cheatFromList() {
+        if (mCheatList.contains(mCurrentIndex)) {
+            mIsCheater = true;
+        } else {
+            mIsCheater = false;
+        }
+    }
+
     private void updateQuestion () {
         int question = mQuestionBank[mCurrentIndex].getQuestion();
         mQuestionTextView.setText(question);
@@ -47,23 +63,30 @@ public class QuizActivity extends Activity {
 
         int messageResId = 0;
 
-        if (userPressedTrue == answerIsTrue) {
-            messageResId = R.string.correct_toast;
+        if (mIsCheater) {
+            messageResId = R.string.judgment_toast;
         } else {
-            messageResId = R.string.incorrect_toast;
+            if (userPressedTrue == answerIsTrue) {
+                messageResId = R.string.correct_toast;
+            } else {
+                messageResId = R.string.incorrect_toast;
+            }
         }
 
         Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate(Bundle) called");
         setContentView(R.layout.activity_quiz);
 
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX);
+            mCheatList = savedInstanceState.getIntegerArrayList(CHEAT_LIST);
+        } else {
+            mCheatList = new ArrayList<Integer>();
         }
 
         mQuestionTextView = (TextView)findViewById(R.id.question_text_view);
@@ -71,6 +94,8 @@ public class QuizActivity extends Activity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+//                mIsCheater = false;
+                cheatFromList();
                 updateQuestion();
             }
         });
@@ -96,6 +121,8 @@ public class QuizActivity extends Activity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+//                mIsCheater = false;
+                cheatFromList();
                 updateQuestion();
             }
         });
@@ -110,6 +137,8 @@ public class QuizActivity extends Activity {
                 } else {
                     mCurrentIndex = Math.abs(mCurrentIndex + mQuestionBank.length) % mQuestionBank.length;
                 }
+//                mIsCheater = false;
+                cheatFromList();
                 updateQuestion();
             }
         });
@@ -120,10 +149,13 @@ public class QuizActivity extends Activity {
             public void onClick(View v) {
                 //Start CheatActivity
                 Intent i = new Intent(QuizActivity.this, CheatActivity.class);
-                startActivity(i);
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isTrueQuestion();
+                i.putExtra(CheatActivity.EXTRA_ANSWER_IS_TRUE, answerIsTrue);
+                startActivityForResult(i, 0);
             }
         });
 
+        cheatFromList();
         updateQuestion();
     }
 
@@ -133,36 +165,37 @@ public class QuizActivity extends Activity {
         super.onSaveInstanceState(savedInstance);
         Log.i(TAG, "onSaveInstance() called.");
         savedInstance.putInt(KEY_INDEX, mCurrentIndex);
+        savedInstance.putIntegerArrayList(CHEAT_LIST, mCheatList);
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        Log.d(TAG, "onStart() called");
+        Log.d(TAG, "onStart() called.");
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        Log.d(TAG, "onPause() called");
+        Log.d(TAG, "onPause() called.");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume() called");
+        Log.d(TAG, "onResume() called.");
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        Log.d(TAG, "onStop() called");
+        Log.d(TAG, "onStop() called.");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy() called");
+        Log.d(TAG, "onDestroy() called.");
     }
 
 
@@ -186,5 +219,19 @@ public class QuizActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (data == null) {
+            return;
+        }
+        mIsCheater = data.getBooleanExtra(CheatActivity.EXTRA_ANSWER_SHOWN, false);
+
+        if (!mCheatList.contains(mCurrentIndex) && mIsCheater) {
+            mCheatList.add(mCurrentIndex);
+        } else if (!mIsCheater && mCheatList.contains(mCurrentIndex)) {
+            mIsCheater = true;
+        }
     }
 }
