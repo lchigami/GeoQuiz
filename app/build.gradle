@@ -5,7 +5,7 @@ android {
     buildToolsVersion "21.1.2"
 
     defaultConfig {
-        applicationId "geoquiz.android.bignerdranch.com.geoquiz"
+        applicationId "com.bignerdranch.android.geoquiz"
         minSdkVersion 17
         targetSdkVersion 21
         versionCode 1
